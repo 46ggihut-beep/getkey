@@ -6,168 +6,72 @@
 <title>SkitringXHub - Get Key</title>
 <style>
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #0d0f14;
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
-    color: #eaeaea;
-    padding: 20px;
-  }
-  .card {
-    background: #171a21;
-    border: 1px solid #2a2f3a;
-    border-radius: 14px;
-    padding: 28px 24px;
-    width: 100%;
-    max-width: 380px;
-    text-align: center;
-  }
-  h1 {
-    font-size: 18px;
-    margin: 0 0 4px;
-    color: #ff5e5e;
-  }
-  p.sub {
-    font-size: 13px;
-    color: #8a8f99;
-    margin: 0 0 20px;
-  }
-  button {
-    width: 100%;
-    padding: 13px;
-    border: none;
-    border-radius: 10px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 10px;
-  }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #0d0f14; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #eaeaea; padding: 20px; }
+  .card { background: #171a21; border: 1px solid #2a2f3a; border-radius: 14px; padding: 28px 24px; width: 100%; max-width: 380px; text-align: center; }
+  h1 { font-size: 18px; margin: 0 0 4px; color: #ff5e5e; }
+  p.sub { font-size: 13px; color: #8a8f99; margin: 0 0 20px; }
+  button { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+  button:disabled { opacity: .5; }
   #getBtn { background: #ff5e5e; color: #fff; }
-  #getBtn:active { opacity: .85; }
-  .key-box {
-    display: none;
-    margin-top: 20px;
-    background: #0d0f14;
-    border: 1px dashed #3a3f4a;
-    border-radius: 10px;
-    padding: 14px;
-  }
-  #keyText {
-    font-size: 15px;
-    word-break: break-all;
-    font-family: monospace;
-    color: #7fffab;
-  }
+  .key-box { display: none; margin-top: 20px; background: #0d0f14; border: 1px dashed #3a3f4a; border-radius: 10px; padding: 14px; }
+  #keyText { font-size: 15px; word-break: break-all; font-family: monospace; color: #7fffab; }
   #copyBtn { background: #2a2f3a; color: #eaeaea; }
-  #timer {
-    margin-top: 14px;
-    font-size: 13px;
-    color: #8a8f99;
-  }
+  #timer { margin-top: 14px; font-size: 13px; color: #8a8f99; }
   #timer b { color: #ffd166; font-size: 16px; }
-  .toast {
-    position: fixed;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: #2a2f3a;
-    padding: 10px 18px;
-    border-radius: 8px;
-    font-size: 13px;
-    opacity: 0;
-    transition: .25s;
-    pointer-events: none;
-  }
+  #errBox { color: #ff6b6b; font-size: 13px; margin-top: 12px; display: none; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2a2f3a; padding: 10px 18px; border-radius: 8px; font-size: 13px; opacity: 0; transition: .25s; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-
 <div class="card">
   <h1>SkitringXHub</h1>
   <p class="sub">Nhấn nút bên dưới để lấy key (hạn dùng 6 tiếng)</p>
-
   <button id="getBtn" onclick="getKey()">GET KEY</button>
-
+  <div id="errBox"></div>
   <div class="key-box" id="keyBox">
     <div id="keyText"></div>
     <button id="copyBtn" onclick="copyKey()">COPY KEY</button>
     <div id="timer">Còn lại: <b id="timeLeft">--:--:--</b></div>
   </div>
 </div>
-
 <div class="toast" id="toast">Đã copy key</div>
-
 <script>
-const STORAGE_KEY = "sxh_key_data"; // {key, expireAt}
-const DURATION_MS = 6 * 60 * 60 * 1000; // 6 tiếng
+const API_URL = "https://script.google.com/macros/s/AKfycbxdejVyfJUT3SG9pTEKMZGUI7jiMHO6kMhlRBtfEpvqDHyyAocFi7Ec4md_mPodrg/exec";
+const STORAGE_KEY = "sxh_key_data";
 let countdownInterval = null;
-
-function randChar6() {
-  // 6 ký tự, bắt buộc có ít nhất 1 số + 1 chữ
-  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
-  const digits = "0123456789";
-  const all = letters + digits;
-  let chars = [];
-  chars.push(letters[Math.floor(Math.random() * letters.length)]); // ép có chữ
-  chars.push(digits[Math.floor(Math.random() * digits.length)]);   // ép có số
-  for (let i = 0; i < 4; i++) {
-    chars.push(all[Math.floor(Math.random() * all.length)]);
-  }
-  // xáo trộn vị trí
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chars[i], chars[j]] = [chars[j], chars[i]];
-  }
-  return chars.join("");
-}
-
-function generateKey() {
-  return "SkitringXHub-" + randChar6();
-}
-
-function saveKeyData(key, expireAt) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, expireAt }));
-}
-
-function loadKeyData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
-}
-
-function clearKeyData() {
-  localStorage.removeItem(STORAGE_KEY);
-}
-
-function getKey() {
+function saveKeyData(key, expireAt) { localStorage.setItem(STORAGE_KEY, JSON.stringify({ key, expireAt })); }
+function loadKeyData() { try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+function clearKeyData() { localStorage.removeItem(STORAGE_KEY); }
+async function getKey() {
   const existing = loadKeyData();
-  if (existing && existing.expireAt > Date.now()) {
-    // còn key hạn dùng -> hiện lại, không tạo mới
-    showKey(existing.key, existing.expireAt);
-    return;
+  if (existing && existing.expireAt > Date.now()) { showKey(existing.key, existing.expireAt); return; }
+  const btn = document.getElementById("getBtn");
+  const errBox = document.getElementById("errBox");
+  errBox.style.display = "none";
+  btn.disabled = true;
+  btn.textContent = "Đang lấy key...";
+  try {
+    const res = await fetch(`${API_URL}?action=getkey`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || "Lỗi không xác định");
+    saveKeyData(data.key, data.expireAt);
+    showKey(data.key, data.expireAt);
+  } catch (err) {
+    errBox.textContent = "Lỗi lấy key: " + err.message + ". Thử lại sau.";
+    errBox.style.display = "block";
+    btn.disabled = false;
+    btn.textContent = "GET KEY";
   }
-  const key = generateKey();
-  const expireAt = Date.now() + DURATION_MS;
-  saveKeyData(key, expireAt);
-  showKey(key, expireAt);
 }
-
 function showKey(key, expireAt) {
   document.getElementById("keyText").textContent = key;
   document.getElementById("keyBox").style.display = "block";
-  document.getElementById("getBtn").textContent = "GENERATE KEY MỚI (key cũ vẫn còn hạn)";
+  const btn = document.getElementById("getBtn");
+  btn.disabled = false;
+  btn.textContent = "GENERATE KEY MỚI (key cũ vẫn còn hạn)";
   startCountdown(expireAt);
 }
-
 function startCountdown(expireAt) {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
@@ -183,13 +87,9 @@ function startCountdown(expireAt) {
     const h = Math.floor(remain / 3600000);
     const m = Math.floor((remain % 3600000) / 60000);
     const s = Math.floor((remain % 60000) / 1000);
-    document.getElementById("timeLeft").textContent =
-      String(h).padStart(2, "0") + ":" +
-      String(m).padStart(2, "0") + ":" +
-      String(s).padStart(2, "0");
+    document.getElementById("timeLeft").textContent = String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }, 1000);
 }
-
 function copyKey() {
   const key = document.getElementById("keyText").textContent;
   navigator.clipboard.writeText(key).then(() => {
@@ -197,7 +97,6 @@ function copyKey() {
     t.classList.add("show");
     setTimeout(() => t.classList.remove("show"), 1500);
   }).catch(() => {
-    // fallback cho trình duyệt cũ / webview
     const ta = document.createElement("textarea");
     ta.value = key;
     document.body.appendChild(ta);
@@ -206,15 +105,10 @@ function copyKey() {
     document.body.removeChild(ta);
   });
 }
-
-// nếu load lại trang mà đang có key còn hạn -> hiện luôn
 window.onload = () => {
   const existing = loadKeyData();
-  if (existing && existing.expireAt > Date.now()) {
-    showKey(existing.key, existing.expireAt);
-  }
+  if (existing && existing.expireAt > Date.now()) { showKey(existing.key, existing.expireAt); }
 };
 </script>
-
 </body>
 </html>
